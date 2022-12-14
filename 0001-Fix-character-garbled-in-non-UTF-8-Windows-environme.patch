@@ -1,0 +1,89 @@
+From c43f7d6f3cc9843043e526f5a8eb7ffa097d19ca Mon Sep 17 00:00:00 2001
+From: Iku Iwasa <iku.iwasa@gmail.com>
+Date: Mon, 12 Dec 2022 08:30:37 +0900
+Subject: [PATCH 1/2] Fix character garbled in non UTF-8 Windows environment
+
+---
+ w32/main.c | 28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
+
+diff --git a/w32/main.c b/w32/main.c
+index d8a4833..24def9d 100644
+--- a/w32/main.c
++++ b/w32/main.c
+@@ -166,14 +166,14 @@ wchar_to_utf8 (const wchar_t *string, size_t len, int secure)
+   /* Note, that CP_UTF8 is not defined in Windows versions earlier
+      than NT.  */
+   n = WideCharToMultiByte (CP_UTF8, 0, string, len, NULL, 0, NULL, NULL);
+-  if (n < 0)
++  if (n == 0)
+     return NULL;
+ 
+   result = secure? secmem_malloc (n+1) : malloc (n+1);
+   if (!result)
+     return NULL;
+   n = WideCharToMultiByte (CP_UTF8, 0, string, len, result, n, NULL, NULL);
+-  if (n < 0)
++  if (n == 0)
+     {
+       if (secure)
+         secmem_free (result);
+@@ -185,24 +185,22 @@ wchar_to_utf8 (const wchar_t *string, size_t len, int secure)
+ }
+ 
+ 
+-/* Convert a UTF8 string to wchar.  Returns NULL on error. Caller
+-   needs to free the returned value.  */
+ wchar_t *
+-utf8_to_wchar (const char *string)
++mb_to_wchar (UINT codepage, DWORD flags, const char *string)
+ {
+   int n;
+   wchar_t *result;
+   size_t len = strlen (string);
+ 
+-  n = MultiByteToWideChar (CP_UTF8, 0, string, len, NULL, 0);
+-  if (n < 0)
++  n = MultiByteToWideChar (codepage, flags, string, len, NULL, 0);
++  if (n == 0)
+     return NULL;
+ 
+   result = calloc ((n+1), sizeof *result);
+   if (!result)
+     return NULL;
+-  n = MultiByteToWideChar (CP_UTF8, 0, string, len, result, n);
+-  if (n < 0)
++  n = MultiByteToWideChar (codepage, flags, string, len, result, n);
++  if (n == 0)
+     {
+       free (result);
+       return NULL;
+@@ -211,6 +209,13 @@ utf8_to_wchar (const char *string)
+   return result;
+ }
+ 
++/* Convert a UTF8 string to wchar.  Returns NULL on error. Caller
++   needs to free the returned value.  */
++wchar_t *
++utf8_to_wchar (const char *string)
++{
++    return mb_to_wchar(CP_UTF8, 0, string);
++}
+ 
+ /* Raise the software input panel.  */
+ static void
+@@ -360,7 +365,10 @@ set_dlg_item_text (HWND dlg, int item, const char *string)
+     {
+       wchar_t *wbuf;
+ 
+-      wbuf = utf8_to_wchar (string);
++      wbuf = mb_to_wchar (CP_ACP, MB_ERR_INVALID_CHARS, string);
++      if (!wbuf)
++          wbuf = utf8_to_wchar (string);
++
+       if (!wbuf)
+         SetDlgItemTextW (dlg, item, L"[out of core]");
+       else
+-- 
+2.39.0.windows.1
+

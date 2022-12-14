@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      PINENTRY_VERSION: 1.2.1
+      MSYSTEM: MINGW64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+           pacman -S --noconfirm --needed --noprogressbar make mingw-w64-x86_64-gcc mingw-w64-x86_64-libassuan mingw-w64-x86_64-libgpg-error patch
+        shell: 'C:/shells/msys2bash.cmd {0}'
+
+      - name: Build pinentry
+        run: |
+          export PATH=/mingw64/bin:$PATH
+
+          curl -fLO "https://gnupg.org/ftp/gcrypt/pinentry/pinentry-${PINENTRY_VERSION}.tar.bz2"
+          tar xvjf "pinentry-${PINENTRY_VERSION}.tar.bz2"
+          cd "pinentry-${PINENTRY_VERSION}"
+
+          patch -p1 < ../0001-Fix-character-garbled-in-non-UTF-8-Windows-environme.patch
+          patch -p1 < ../0002-Adjust-dialog-and-its-components-size.patch
+
+          ./configure --disable-pinentry-curses
+          make
+        shell: 'C:/shells/msys2bash.cmd {0}'
+
+      - name: Archive
+        id: archive
+        run: |
+          cd "pinentry-${{ env.PINENTRY_VERSION }}/w32"
+          Compress-Archive -Path pinentry-w32.exe -DestinationPath ../../pinentry-w32-ncg-v${{ env.PINENTRY_VERSION }}.zip
+          cd ../..
+          $ARTIFACT_HASH = (Get-FileHash -Algorithm SHA256 pinentry-w32-ncg-v${{ env.PINENTRY_VERSION }}.zip).Hash
+          "$ARTIFACT_HASH  pinentry-w32-ncg-v${{ env.PINENTRY_VERSION }}.zip"| Out-File -Encoding ascii -File sha256sum.txt
+          "hash=$ARTIFACT_HASH`n" | Out-File -NoNewline -Encoding utf8 -Append $env:GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "pinentry-w32-ncg-v${{ env.PINENTRY_VERSION }}.zip,sha256sum.txt"
+          artifactContentType: application/octet-stream
+          name: pinentry-w32-ncg v${{ env.PINENTRY_VERSION }}
+          body: |
+            pinentry-w32 binary with no characters garbled.
+
+            Built pinentry-${{ env.PINENTRY_VERSION }} with some patches in the repository.
+
+            | File | SHA-256 sum |
+            | ---  | ---         |
+            | pinentry-w32-ncg-v${{ env.PINENTRY_VERSION }}.zip | `${{ steps.archive.outputs.hash }}` |
+          token: ${{ secrets.GITHUB_TOKEN }}

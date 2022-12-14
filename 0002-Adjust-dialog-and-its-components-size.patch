@@ -1,0 +1,42 @@
+From 1f0b8cb63c3f21328ce075c3d0d7bd45c41eeb5b Mon Sep 17 00:00:00 2001
+From: Iku Iwasa <iku.iwasa@gmail.com>
+Date: Wed, 14 Dec 2022 22:48:28 +0900
+Subject: [PATCH 2/2] Adjust dialog and its components size
+
+---
+ w32/pinentry-w32.rc | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/w32/pinentry-w32.rc b/w32/pinentry-w32.rc
+index bc3dacb..072f12f 100755
+--- a/w32/pinentry-w32.rc
++++ b/w32/pinentry-w32.rc
+@@ -51,7 +51,7 @@ IDB_ICON_64    BITMAP   DISCARDABLE   "logo-64.bmp"
+ IDB_ICON_96    BITMAP   DISCARDABLE   "logo-96.bmp"
+ IDB_ICON_128   BITMAP   DISCARDABLE   "logo-128.bmp"
+ 
+-IDD_PINENT DIALOG DISCARDABLE  0, 0, 186, 116
++IDD_PINENT DIALOG DISCARDABLE  0, 0, 235, 120
+ STYLE DS_MODALFRAME | DS_SYSMODAL | WS_POPUP | WS_CAPTION | WS_SYSMENU
+ CAPTION "Pinentry"
+ FONT 10, "MS Sans Serif"
+@@ -59,12 +59,12 @@ BEGIN
+     CONTROL         "", IDC_PINENT_ICON,
+                     "Static", SS_BITMAP|SS_CENTERIMAGE,
+                                            4,   6,  32, 32
+-    LTEXT           "", IDC_PINENT_DESC,  40,   6, 140, 50
++    LTEXT           "", IDC_PINENT_DESC,  40,   6, 190, 50
+     RTEXT           "", IDC_PINENT_PROMPT, 6,  60,  60, 12
+-    EDITTEXT        IDC_PINENT_TEXT,      70,  59, 110, 12, ES_PASSWORD | ES_AUTOHSCROLL
++    EDITTEXT        IDC_PINENT_TEXT,      70,  59, 120, 12, ES_PASSWORD | ES_AUTOHSCROLL
+     CTEXT           "", IDC_PINENT_ERR,    6,  76, 174, 12
+-    DEFPUSHBUTTON   "O&K", IDOK,          74,  96,  50, 14
+-    PUSHBUTTON      "&Cancel", IDCANCEL, 130,  96,  50, 14
++    DEFPUSHBUTTON   "O&K", IDOK,          74,  90,  50, 14
++    PUSHBUTTON      "&Cancel", IDCANCEL, 130,  90,  50, 14
+ END
+ 
+ 
+-- 
+2.39.0.windows.1
+
